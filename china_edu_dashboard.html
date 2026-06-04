@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>中国高等教育数据仪表盘</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+:root {
+  --bg: #F8F5F0;
+  --bg2: #F0EBE3;
+  --ink: #1A1A2E;
+  --ink2: #3D3D5C;
+  --line: #DDD5C8;
+  --line2: #E8E3DC;
+  --red: #C0392B;
+  --gold: #B8860B;
+  --blue: #00ADEF;
+  --blue2: #2980B9;
+  --green: #27AE60;
+  --mono: 'JetBrains Mono', monospace;
+  --serif: 'Noto Serif SC', serif;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--serif);
+  min-height: 100vh;
+}
+
+/* ── Header ── */
+.header {
+  background: var(--ink);
+  padding: 20px 32px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  border-bottom: 3px solid var(--gold);
+}
+.header-left h1 {
+  color: #fff;
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+}
+.header-left p {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: rgba(255,255,255,0.4);
+  margin-top: 3px;
+  letter-spacing: 1px;
+}
+.header-source {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--gold);
+  border: 1px solid rgba(184,134,11,0.4);
+  padding: 4px 10px;
+  letter-spacing: 1px;
+}
+
+/* ── Nav tabs ── */
+.nav {
+  background: var(--ink2);
+  display: flex;
+  gap: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+.nav::-webkit-scrollbar { display: none; }
+.nav-btn {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: rgba(255,255,255,0.45);
+  padding: 12px 20px;
+  cursor: pointer;
+  white-space: nowrap;
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s;
+  background: none;
+  border-top: none;
+  border-left: none;
+  border-right: none;
+}
+.nav-btn:hover { color: rgba(255,255,255,0.8); }
+.nav-btn.active {
+  color: var(--gold);
+  border-bottom-color: var(--gold);
+  background: rgba(184,134,11,0.06);
+}
+
+/* ── Main layout ── */
+.main { max-width: 1000px; margin: 0 auto; padding: 24px 20px 40px; }
+
+/* ── Panel ── */
+.panel { display: none; }
+.panel.active { display: block; }
+
+.panel-header {
+  margin-bottom: 20px;
+  padding-bottom: 12px;
+  border-bottom: 1.5px solid var(--ink);
+}
+.panel-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--ink);
+  letter-spacing: 1px;
+}
+.panel-sub {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: #999;
+  margin-top: 4px;
+  letter-spacing: 0.5px;
+}
+
+/* ── Chart container ── */
+.chart-box {
+  background: #fff;
+  border: 1px solid var(--line);
+  padding: 20px 20px 14px;
+  margin-bottom: 16px;
+}
+.chart-box svg { display: block; width: 100%; }
+
+/* ── Legend ── */
+.legend {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line2);
+}
+.leg {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: #666;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.leg-swatch { width: 22px; height: 3px; border-radius: 1px; }
+.leg-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+
+/* ── Data table ── */
+.data-table-wrap {
+  background: #fff;
+  border: 1px solid var(--line);
+  overflow-x: auto;
+  margin-bottom: 16px;
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--mono);
+  font-size: 11px;
+}
+thead th {
+  background: var(--ink);
+  color: rgba(255,255,255,0.85);
+  padding: 9px 12px;
+  text-align: center;
+  font-size: 10px;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+tbody tr:nth-child(even) { background: var(--bg2); }
+tbody td {
+  padding: 7px 12px;
+  text-align: center;
+  color: var(--ink2);
+  border-bottom: 1px solid var(--line2);
+}
+tbody tr:hover td { background: #EAF6FD; }
+.td-year { color: var(--ink); font-weight: 600; }
+.td-forecast { color: var(--red); font-style: italic; }
+.td-pos { color: var(--green); }
+.td-neg { color: var(--red); }
+.td-note { font-size: 9px; color: #AAA; }
+
+/* ── Stats row ── */
+.stats-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.stat-card {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--blue);
+  padding: 12px 14px;
+}
+.stat-card.red { border-left-color: var(--red); }
+.stat-card.gold { border-left-color: var(--gold); }
+.stat-card.green { border-left-color: var(--green); }
+.stat-label {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: #999;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+.stat-val {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--ink);
+  line-height: 1;
+}
+.stat-unit {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: #AAA;
+  margin-top: 2px;
+}
+
+/* ── Note box ── */
+.note-box {
+  background: var(--bg2);
+  border-left: 3px solid var(--gold);
+  padding: 10px 14px;
+  font-family: var(--mono);
+  font-size: 10px;
+  color: #666;
+  line-height: 1.8;
+  margin-bottom: 16px;
+}
+.note-box b { color: var(--ink); }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <h1>中国高等教育数据仪表盘</h1>
+    <p>CHINA HIGHER EDUCATION DATA DASHBOARD · 2000—2029</p>
+  </div>
+  <div class="header-source">数据来源：教育部 / 国家统计局</div>
+</div>
+
+<div class="nav">
+  <button class="nav-btn active" onclick="showPanel('gaokao')">高考报名人数</button>
+  <button class="nav-btn" onclick="showPanel('grad_hs')">高中毕业生</button>
+  <button class="nav-btn" onclick="showPanel('rate')">录取率</button>
+  <button class="nav-btn" onclick="showPanel('college_grad')">高校毕业生</button>
+</div>
+
+<div class="main">
+
+<!-- ① 高考报名人数 -->
+<div id="panel-gaokao" class="panel active">
+  <div class="panel-header">
+    <div class="panel-title">全国高考报名人数（2000—2026年）</div>
+    <div class="panel-sub">单位：万人 · 含应届生与复读生 · 数据来源：教育部官方公告</div>
+  </div>
+  <div class="stats-row">
+    <div class="stat-card red"><div class="stat-label">历史峰值</div><div class="stat-val">1342</div><div class="stat-unit">万人 · 2024年</div></div>
+    <div class="stat-card"><div class="stat-label">2026年最新</div><div class="stat-val">1290</div><div class="stat-unit">万人 · 连续第二年下降</div></div>
+    <div class="stat-card gold"><div class="stat-label">2000年起点</div><div class="stat-val">375</div><div class="stat-unit">万人 · 26年增长3.4倍</div></div>
+    <div class="stat-card green"><div class="stat-label">首次破千万</div><div class="stat-val">2007</div><div class="stat-unit">年 · 1010万人</div></div>
+  </div>
+  <div class="chart-box">
+    <svg id="svg-gaokao" viewBox="0 0 860 360" xmlns="http://www.w3.org/2000/svg"></svg>
+    <div class="legend">
+      <div class="leg"><div class="leg-swatch" style="background:#00ADEF"></div>高考报名人数</div>
+      <div class="leg"><div class="leg-dot" style="background:#C0392B"></div>历史峰值 2024年 1342万</div>
+      <div class="leg"><div class="leg-dot" style="background:#B8860B"></div>关键转折节点</div>
+    </div>
+  </div>
+  <div class="data-table-wrap">
+    <table id="tbl-gaokao"></table>
+  </div>
+</div>
+
+<!-- ② 高中毕业生（普通高中 + 中职） -->
+<div id="panel-grad_hs" class="panel">
+  <div class="panel-header">
+    <div class="panel-title">普通高中 & 中等职业学校毕业生人数（2000—2024年）</div>
+    <div class="panel-sub">单位：万人 · 注：2021年起中职口径不含技工学校，数据不可与前期直接比较</div>
+  </div>
+  <div class="stats-row">
+    <div class="stat-card"><div class="stat-label">普通高中 2024</div><div class="stat-val">891</div><div class="stat-unit">万人 · 历史新高</div></div>
+    <div class="stat-card gold"><div class="stat-label">普通高中 2000</div><div class="stat-val">301.5</div><div class="stat-unit">万人 · 24年近3倍</div></div>
+    <div class="stat-card red"><div class="stat-label">中职 峰值</div><div class="stat-val">674.6</div><div class="stat-unit">万人 · 2012年</div></div>
+    <div class="stat-card green"><div class="stat-label">中职 2024</div><div class="stat-val">415.6</div><div class="stat-unit">万人（不含技工）</div></div>
+  </div>
+  <div class="chart-box">
+    <svg id="svg-hs" viewBox="0 0 860 360" xmlns="http://www.w3.org/2000/svg"></svg>
+    <div class="legend">
+      <div class="leg"><div class="leg-swatch" style="background:#00ADEF"></div>普通高中毕业生</div>
+      <div class="leg"><div class="leg-swatch" style="background:#C0392B"></div>中等职业学校毕业生</div>
+    </div>
+  </div>
+  <div class="note-box">
+    <b>口径说明：</b>2021年起中等职业教育毕业生统计不含人社部门管理的技工学校，导致数据从2020年484.9万降至2021年375.4万，为统计口径调整所致，并非真实大幅减少。前后两段数据不可直接对比趋势。
+  </div>
+  <div class="data-table-wrap">
+    <table id="tbl-hs"></table>
+  </div>
+</div>
+
+<!-- ③ 录取率 -->
+<div id="panel-rate" class="panel">
+  <div class="panel-header">
+    <div class="panel-title">高考录取率（2000—2024年）</div>
+    <div class="panel-sub">毛录取率 = 招生人数 ÷ 高考报名人数 · 数据来源：教育部 / 国家统计局</div>
+  </div>
+  <div class="stats-row">
+    <div class="stat-card red"><div class="stat-label">本专科合计峰值</div><div class="stat-val">92.9%</div><div class="stat-unit">2021年</div></div>
+    <div class="stat-card"><div class="stat-label">本专科合计 2024</div><div class="stat-val">79.6%</div><div class="stat-unit">较峰值回落13.3ppt</div></div>
+    <div class="stat-card gold"><div class="stat-label">本科录取率 2024</div><div class="stat-val">37.3%</div><div class="stat-unit">2000年仅28.9%</div></div>
+    <div class="stat-card green"><div class="stat-label">2000年本专科合计</div><div class="stat-val">58.8%</div><div class="stat-unit">24年间大幅提升</div></div>
+  </div>
+  <div class="chart-box">
+    <svg id="svg-rate" viewBox="0 0 860 360" xmlns="http://www.w3.org/2000/svg"></svg>
+    <div class="legend">
+      <div class="leg"><div class="leg-swatch" style="background:#00ADEF"></div>本专科合计录取率</div>
+      <div class="leg"><div class="leg-swatch" style="background:#C0392B"></div>普通本科录取率</div>
+      <div class="leg"><div class="leg-swatch" style="background:#DDD5C8;height:8px;border-radius:2px;width:14px"></div>两率之差（专科贡献）</div>
+    </div>
+  </div>
+  <div class="data-table-wrap">
+    <table id="tbl-rate"></table>
+  </div>
+</div>
+
+<!-- ④ 高校毕业生 -->
+<div id="panel-college_grad" class="panel">
+  <div class="panel-header">
+    <div class="panel-title">全国普通本专科毕业生人数（2000—2029年）</div>
+    <div class="panel-sub">单位：万人 · 2026—2029年为估算预测值 · 数据来源：教育部 / 国家统计局</div>
+  </div>
+  <div class="stats-row">
+    <div class="stat-card red"><div class="stat-label">2025年实际值</div><div class="stat-val">1105</div><div class="stat-unit">万人 · 国家统计局</div></div>
+    <div class="stat-card"><div class="stat-label">2029年预测</div><div class="stat-val">~1210</div><div class="stat-unit">万人 · 估算</div></div>
+    <div class="stat-card gold"><div class="stat-label">2000年起点</div><div class="stat-val">95</div><div class="stat-unit">万人 · 29年增12倍</div></div>
+    <div class="stat-card green"><div class="stat-label">首破千万</div><div class="stat-val">2022</div><div class="stat-unit">年 · 967.3→1076万跨越</div></div>
+  </div>
+  <div class="chart-box">
+    <svg id="svg-cgrad" viewBox="0 0 860 360" xmlns="http://www.w3.org/2000/svg"></svg>
+    <div class="legend">
+      <div class="leg"><div class="leg-swatch" style="background:#00ADEF"></div>实际毕业生人数</div>
+      <div class="leg"><div class="leg-swatch" style="background:#C0392B;height:2px;border-top:2px dashed #C0392B;background:none"></div>估算预测值（2026—2029）</div>
+      <div class="leg"><div class="leg-dot" style="background:#B8860B"></div>关键节点</div>
+    </div>
+  </div>
+  <div class="note-box">
+    <b>预测方法：</b>依据2021—2025年已知招生数据（本科4年制、专科3年制），结合2019年专科大扩招波峰已于2022—2023年释放完毕，以及2022年后招生增速放缓（年均约+15万），估算2026—2029年毕业生将在1150—1210万区间高位缓增。预测仅供参考。
+  </div>
+  <div class="data-table-wrap">
+    <table id="tbl-cgrad"></table>
+  </div>
+</div>
+
+</div><!-- /main -->
+
+<script>
+// ─── DATA ──────────────────────────────────────────────────────────────────
+
+const gaokaoData = [
+  {y:2000,v:375},{y:2001,v:454},{y:2002,v:510},{y:2003,v:613},{y:2004,v:729},
+  {y:2005,v:877},{y:2006,v:950},{y:2007,v:1010},{y:2008,v:1050},{y:2009,v:1020},
+  {y:2010,v:946},{y:2011,v:933},{y:2012,v:915},{y:2013,v:912},{y:2014,v:939},
+  {y:2015,v:942},{y:2016,v:940},{y:2017,v:940},{y:2018,v:975},{y:2019,v:1031},
+  {y:2020,v:1071},{y:2021,v:1078},{y:2022,v:1193},{y:2023,v:1291},
+  {y:2024,v:1342},{y:2025,v:1335},{y:2026,v:1290}
+];
+
+const hsData = [
+  {y:2000,hs:301.5,zz:476.7},{y:2001,hs:340.5,zz:430.6},{y:2002,hs:383.8,zz:380.1},
+  {y:2003,hs:458.1,zz:346.4},{y:2004,hs:560.8,zz:359.2},{y:2005,hs:674.0,zz:418.2},
+  {y:2006,hs:739.5,zz:479.1},{y:2007,hs:804.8,zz:530.9},{y:2008,hs:845.4,zz:580.7},
+  {y:2009,hs:833.5,zz:624.9},{y:2010,hs:803.5,zz:665.0},{y:2011,hs:809.9,zz:660.0},
+  {y:2012,hs:803.1,zz:674.6},{y:2013,hs:809.4,zz:674.4},{y:2014,hs:812.0,zz:622.9},
+  {y:2015,hs:803.9,zz:567.9},{y:2016,hs:797.0,zz:533.6},{y:2017,hs:779.6,zz:496.9},
+  {y:2018,hs:779.2,zz:487.3},{y:2019,hs:791.4,zz:493.5},{y:2020,hs:786.5,zz:484.9},
+  {y:2021,hs:780.2,zz:375.4,zzNote:'口径调整'},{y:2022,hs:824.1,zz:399.3},
+  {y:2023,hs:860.4,zz:415.5},{y:2024,hs:890.99,zz:415.55}
+];
+
+const rateData = [
+  {y:2000,total:220.6,bk:108.6,exam:375},
+  {y:2001,total:268.3,bk:128.8,exam:454},
+  {y:2002,total:320.5,bk:153.1,exam:510},
+  {y:2003,total:382.2,bk:178.1,exam:613},
+  {y:2004,total:447.3,bk:213.0,exam:729},
+  {y:2005,total:504.5,bk:236.2,exam:877},
+  {y:2006,total:546.1,bk:260.0,exam:950},
+  {y:2007,total:565.9,bk:275.2,exam:1010},
+  {y:2008,total:607.7,bk:302.8,exam:1050},
+  {y:2009,total:639.5,bk:317.4,exam:1020},
+  {y:2010,total:661.8,bk:330.4,exam:946},
+  {y:2011,total:681.5,bk:339.7,exam:933},
+  {y:2012,total:688.8,bk:343.5,exam:915},
+  {y:2013,total:699.8,bk:353.9,exam:912},
+  {y:2014,total:721.4,bk:368.1,exam:939},
+  {y:2015,total:737.8,bk:383.5,exam:942},
+  {y:2016,total:748.6,bk:391.7,exam:940},
+  {y:2017,total:761.5,bk:404.6,exam:940},
+  {y:2018,total:790.99,bk:422.16,exam:975},
+  {y:2019,total:914.90,bk:431.4,exam:1031},
+  {y:2020,total:967.45,bk:443.12,exam:1071},
+  {y:2021,total:1001.32,bk:448.74,exam:1078},
+  {y:2022,total:1014.5,bk:467.94,exam:1193},
+  {y:2023,total:1042.2,bk:487.15,exam:1291},
+  {y:2024,total:1068.9,bk:500.93,exam:1342},
+];
+rateData.forEach(d=>{ d.rT=d.total/d.exam; d.rB=d.bk/d.exam; });
+
+const cgradData = [
+  {y:2000,v:95.0},{y:2001,v:103.6},{y:2002,v:133.7},{y:2003,v:187.7},
+  {y:2004,v:239.1},{y:2005,v:306.8},{y:2006,v:377.5},{y:2007,v:447.8},
+  {y:2008,v:511.9},{y:2009,v:531.1},{y:2010,v:575.4},{y:2011,v:608.2},
+  {y:2012,v:624.7},{y:2013,v:638.7},{y:2014,v:659.4},{y:2015,v:680.9},
+  {y:2016,v:704.2},{y:2017,v:735.8},{y:2018,v:753.3},{y:2019,v:758.5},
+  {y:2020,v:797.2},{y:2021,v:826.5},{y:2022,v:967.3},{y:2023,v:1047.0},
+  {y:2024,v:1059.4},{y:2025,v:1105.1},
+  {y:2026,v:1150,forecast:true},{y:2027,v:1180,forecast:true},
+  {y:2028,v:1200,forecast:true},{y:2029,v:1210,forecast:true}
+];
+
+// ─── SVG HELPERS ──────────────────────────────────────────────────────────
+
+function el(tag,attrs){
+  const e=document.createElementNS('http://www.w3.org/2000/svg',tag);
+  if(attrs) Object.entries(attrs).forEach(([k,v])=>e.setAttribute(k,v));
+  return e;
+}
+function tx(x,y,str,attrs={}){
+  const t=document.createElementNS('http://www.w3.org/2000/svg','text');
+  t.setAttribute('x',x); t.setAttribute('y',y);
+  Object.entries(attrs).forEach(([k,v])=>t.setAttribute(k,v));
+  t.textContent=str; return t;
+}
+
+const W=860,H=360;
+const P={top:38,right:50,bottom:46,left:60};
+const cW=W-P.left-P.right, cH=H-P.top-P.bottom;
+
+function makeGrid(svg,yVals,xS,yS,labelFmt){
+  yVals.forEach(v=>{
+    const y=yS(v);
+    svg.appendChild(el('line',{x1:P.left,x2:P.left+cW,y1:y,y2:y,
+      stroke:'#E5DFD8','stroke-width':'0.7','stroke-dasharray':'4 3'}));
+    svg.appendChild(tx(P.left-8,y+4,labelFmt(v),{
+      'text-anchor':'end','font-size':'10','font-family':'JetBrains Mono,monospace',fill:'#AAA'}));
+  });
+  svg.appendChild(el('line',{x1:P.left,x2:P.left+cW,y1:P.top+cH,y2:P.top+cH,
+    stroke:'#1A1A2E','stroke-width':'1.2'}));
+}
+
+function makeXLabels(svg, data, xS, skipFn){
+  data.forEach((d,i)=>{
+    if(skipFn && skipFn(d,i)) return;
+    const x=xS(i);
+    svg.appendChild(el('line',{x1:x,x2:x,y1:P.top+cH,y2:P.top+cH+4,stroke:'#CCC','stroke-width':'1'}));
+    svg.appendChild(tx(x,P.top+cH+15,d.y,{
+      'text-anchor':'middle','font-size':'10','font-family':'JetBrains Mono,monospace',fill:'#999'}));
+  });
+}
+
+function makeArea(svg, pts, gradId){
+  const n=pts.length;
+  const poly=el('polygon',{
+    points:`${pts[0][0]},${P.top+cH} ${pts.map(p=>p.join(',')).join(' ')} ${pts[n-1][0]},${P.top+cH}`,
+    fill:`url(#${gradId})`});
+  svg.appendChild(poly);
+}
+
+function makeLine(svg, pts, color, dashed=false){
+  const polyline=el('polyline',{
+    points:pts.map(p=>p.join(',')).join(' '),
+    fill:'none',stroke:color,'stroke-width':'2.3',
+    'stroke-linejoin':'round','stroke-linecap':'round'});
+  if(dashed) polyline.setAttribute('stroke-dasharray','6 4');
+  svg.appendChild(polyline);
+}
+
+function addGradient(svg, id, color){
+  const defs=svg.querySelector('defs')||el('defs',{});
+  if(!svg.querySelector('defs')) svg.appendChild(defs);
+  const g=el('linearGradient',{id,x1:'0',y1:'0',x2:'0',y2:'1'});
+  const s1=el('stop',{'offset':'0%','stop-color':color,'stop-opacity':'0.15'});
+  const s2=el('stop',{'offset':'100%','stop-color':color,'stop-opacity':'0.01'});
+  g.appendChild(s1); g.appendChild(s2); defs.appendChild(g);
+}
+
+function addDot(svg,x,y,r,fill,stroke='white'){
+  svg.appendChild(el('circle',{cx:x,cy:y,r,fill,stroke,'stroke-width':'1.8'}));
+}
+
+function annotate(svg,x,y,year,val,dx,dy,color,valFmt){
+  addDot(svg,x,y,5,color);
+  const lx=x+dx*0.5, ly=y+dy*0.5;
+  svg.appendChild(el('line',{x1:x,y1:y,x2:lx,y2:ly,stroke:color,'stroke-width':'0.9','stroke-dasharray':'3 2',opacity:'0.7'}));
+  const bx=dx<0?x+dx-72:x+dx, by=y+dy-14;
+  svg.appendChild(el('rect',{x:bx-2,y:by,width:76,height:26,fill:'white',opacity:'0.92',rx:'2'}));
+  svg.appendChild(tx(bx,by+11,year+'年',{'font-size':'9.5','font-family':'JetBrains Mono,monospace',fill:color,'font-weight':'600'}));
+  svg.appendChild(tx(bx,by+22,valFmt(val),{'font-size':'9','font-family':'JetBrains Mono,monospace',fill:'#666'}));
+}
+
+// ─── CHART 1: GAOKAO ──────────────────────────────────────────────────────
+
+function buildGaokao(){
+  const svg=document.getElementById('svg-gaokao');
+  const d=gaokaoData, n=d.length;
+  const xS=i=>P.left+(i/(n-1))*cW;
+  const minV=300,maxV=1450;
+  const yS=v=>P.top+cH-((v-minV)/(maxV-minV))*cH;
+
+  const defsEl=el('defs',{}); svg.appendChild(defsEl);
+  addGradient(svg,'gg1','#00ADEF');
+
+  makeGrid(svg,[400,600,800,1000,1200,1400],xS,yS,v=>v);
+  svg.appendChild(tx(P.left+4,yS(1000)-5,'1000万人门槛',{'font-size':'9','font-family':'JetBrains Mono,monospace',fill:'#CCC'}));
+  makeXLabels(svg,d,xS,(dd)=>dd.y%2!==0);
+
+  const pts=d.map((dd,i)=>[xS(i),yS(dd.v)]);
+  makeArea(svg,pts,'gg1');
+  makeLine(svg,pts,'#00ADEF');
+
+  d.forEach((dd,i)=>{
+    const key=[2007,2009,2021,2024,2026].includes(dd.y);
+    if(!key) svg.appendChild(el('circle',{cx:xS(i),cy:yS(dd.v),r:'2.2',fill:'#00ADEF',opacity:'0.6'}));
+  });
+
+  const fi=y=>d.findIndex(dd=>dd.y===y);
+  annotate(svg,xS(fi(2008)),yS(1050),2008,1050, 6,-32,'#B8860B',v=>v+'万人');
+  annotate(svg,xS(fi(2021)),yS(1078),2021,1078,-76,-28,'#B8860B',v=>v+'万人');
+  annotate(svg,xS(fi(2024)),yS(1342),2024,1342,-76,-28,'#C0392B',v=>v+'万人');
+  annotate(svg,xS(fi(2026)),yS(1290),2026,1290,-76, 26,'#888',v=>v+'万人');
+}
+
+// ─── CHART 2: HIGH SCHOOL GRADS ───────────────────────────────────────────
+
+function buildHS(){
+  const svg=document.getElementById('svg-hs');
+  const d=hsData, n=d.length;
+  const xS=i=>P.left+(i/(n-1))*cW;
+  const minV=200,maxV=960;
+  const yS=v=>P.top+cH-((v-minV)/(maxV-minV))*cH;
+
+  const defsEl=el('defs',{}); svg.appendChild(defsEl);
+  addGradient(svg,'ghsBlue','#00ADEF');
+  addGradient(svg,'ghsRed','#C0392B');
+
+  makeGrid(svg,[200,300,400,500,600,700,800,900],xS,yS,v=>v);
+  makeXLabels(svg,d,xS,(dd)=>dd.y%2!==0);
+
+  const ptsHS=d.map((dd,i)=>[xS(i),yS(dd.hs)]);
+  const ptsZZ=d.map((dd,i)=>[xS(i),yS(dd.zz)]);
+
+  makeArea(svg,ptsHS,'ghsBlue');
+  makeArea(svg,ptsZZ,'ghsRed');
+  makeLine(svg,ptsHS,'#00ADEF');
+  makeLine(svg,ptsZZ,'#C0392B');
+
+  // dots
+  d.forEach((dd,i)=>{
+    svg.appendChild(el('circle',{cx:xS(i),cy:yS(dd.hs),r:'2.2',fill:'#00ADEF',opacity:'0.6'}));
+    svg.appendChild(el('circle',{cx:xS(i),cy:yS(dd.zz),r:'2.2',fill:'#C0392B',opacity:'0.6'}));
+  });
+
+  // 2021 口径调整标注
+  const i21=d.findIndex(dd=>dd.y===2021);
+  const x21=xS(i21), y21=yS(d[i21].zz);
+  svg.appendChild(el('line',{x1:x21,x2:x21,y1:P.top,y2:P.top+cH,stroke:'#B8860B','stroke-width':'1','stroke-dasharray':'4 3',opacity:'0.5'}));
+  svg.appendChild(tx(x21+4,P.top+12,'口径调整',{'font-size':'9','font-family':'JetBrains Mono,monospace',fill:'#B8860B'}));
+
+  const fi=y=>d.findIndex(dd=>dd.y===y);
+  annotate(svg,xS(fi(2008)),yS(845.4),2008,845.4,6,-30,'#00ADEF',v=>v.toFixed(1)+'万人');
+  annotate(svg,xS(fi(2012)),yS(674.6),2012,674.6,6,-30,'#C0392B',v=>v.toFixed(1)+'万人');
+  annotate(svg,xS(fi(2024)),yS(890.99),2024,891,6,-30,'#00ADEF',v=>v+'万人');
+  annotate(svg,xS(fi(2024)),yS(415.55),2024,415.6,-76,26,'#C0392B',v=>v+'万人');
+}
+
+// ─── CHART 3: RATE ────────────────────────────────────────────────────────
+
+function buildRate(){
+  const svg=document.getElementById('svg-rate');
+  const d=rateData, n=d.length;
+  const xS=i=>P.left+(i/(n-1))*cW;
+  const minV=0.2, maxV=1.0;
+  const yS=v=>P.top+cH-((v-minV)/(maxV-minV))*cH;
+
+  const defsEl=el('defs',{}); svg.appendChild(defsEl);
+  addGradient(svg,'grBlue','#00ADEF');
+  addGradient(svg,'grRed','#C0392B');
+
+  makeGrid(svg,[0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0],xS,yS,v=>Math.round(v*100)+'%');
+  svg.appendChild(tx(P.left+4,yS(0.5)-5,'50%基准线',{'font-size':'9','font-family':'JetBrains Mono,monospace',fill:'#CCC'}));
+  makeXLabels(svg,d,xS,(dd)=>dd.y%2!==0);
+
+  const ptsT=d.map((dd,i)=>[xS(i),yS(dd.rT)]);
+  const ptsB=d.map((dd,i)=>[xS(i),yS(dd.rB)]);
+
+  // band
+  const bandPts=`${ptsT.map(p=>p.join(',')).join(' ')} ${[...ptsB].reverse().map(p=>p.join(',')).join(' ')}`;
+  svg.appendChild(el('polygon',{points:bandPts,fill:'#DDD5C8',opacity:'0.4'}));
+
+  makeArea(svg,ptsT,'grBlue');
+  makeArea(svg,ptsB,'grRed');
+  makeLine(svg,ptsT,'#00ADEF');
+  makeLine(svg,ptsB,'#C0392B');
+
+  d.forEach((dd,i)=>{
+    if(![2000,2019,2021,2024].includes(dd.y)){
+      svg.appendChild(el('circle',{cx:xS(i),cy:yS(dd.rT),r:'2',fill:'#00ADEF',opacity:'0.6'}));
+      svg.appendChild(el('circle',{cx:xS(i),cy:yS(dd.rB),r:'2',fill:'#C0392B',opacity:'0.6'}));
+    }
+  });
+
+  const fi=y=>d.findIndex(dd=>dd.y===y);
+  annotate(svg,xS(fi(2000)),yS(rateData[0].rT),2000,rateData[0].rT,-6,-34,'#00ADEF',v=>(v*100).toFixed(1)+'%');
+  annotate(svg,xS(fi(2019)),yS(rateData[fi(2019)].rT),2019,rateData[fi(2019)].rT,6,-32,'#B8860B',v=>(v*100).toFixed(1)+'%');
+  annotate(svg,xS(fi(2021)),yS(rateData[fi(2021)].rT),2021,rateData[fi(2021)].rT,-76,-28,'#C0392B',v=>(v*100).toFixed(1)+'%');
+  annotate(svg,xS(fi(2024)),yS(rateData[fi(2024)].rB),2024,rateData[fi(2024)].rB,6,-30,'#C0392B',v=>(v*100).toFixed(1)+'%');
+}
+
+// ─── CHART 4: COLLEGE GRADS ───────────────────────────────────────────────
+
+function buildCGrad(){
+  const svg=document.getElementById('svg-cgrad');
+  const d=cgradData, n=d.length;
+  const xS=i=>P.left+(i/(n-1))*cW;
+  const minV=0, maxV=1350;
+  const yS=v=>P.top+cH-((v-minV)/(maxV-minV))*cH;
+
+  const defsEl=el('defs',{}); svg.appendChild(defsEl);
+  addGradient(svg,'gcBlue','#00ADEF');
+
+  makeGrid(svg,[200,400,600,800,1000,1200],xS,yS,v=>v);
+  svg.appendChild(tx(P.left+4,yS(1000)-5,'1000万人',{'font-size':'9','font-family':'JetBrains Mono,monospace',fill:'#CCC'}));
+  makeXLabels(svg,d,xS,(dd)=>dd.y%2!==0);
+
+  // split actual vs forecast
+  const actualPts=d.filter(dd=>!dd.forecast).map((dd,i)=>[xS(i),yS(dd.v)]);
+  const forecastPts=d.map((dd,i)=>[xS(i),yS(dd.v)]).slice(d.findIndex(dd=>!dd.forecast&&d[cgradData.indexOf(dd)+1]?.forecast)-1 || 24);
+
+  const allPts=d.map((dd,i)=>[xS(i),yS(dd.v)]);
+  makeArea(svg,actualPts,'gcBlue');
+
+  // actual line
+  const splitIdx=d.findIndex(dd=>dd.forecast);
+  makeLine(svg,allPts.slice(0,splitIdx),'#00ADEF');
+  // forecast line dashed
+  makeLine(svg,allPts.slice(splitIdx-1),'#C0392B',true);
+
+  // forecast dots
+  d.forEach((dd,i)=>{
+    if(dd.forecast){
+      svg.appendChild(el('circle',{cx:xS(i),cy:yS(dd.v),r:'3.5',fill:'#C0392B',stroke:'white','stroke-width':'1.5',opacity:'0.8'}));
+    } else {
+      if(![2000,2022,2025].includes(dd.y))
+        svg.appendChild(el('circle',{cx:xS(i),cy:yS(dd.v),r:'2.2',fill:'#00ADEF',opacity:'0.6'}));
+    }
+  });
+
+  // forecast start label
+  const fsi=d.findIndex(dd=>dd.forecast);
+  const fsx=xS(fsi), fsy=yS(d[fsi].v);
+  svg.appendChild(el('line',{x1:fsx,x2:fsx,y1:P.top,y2:P.top+cH,stroke:'#C0392B','stroke-width':'1','stroke-dasharray':'4 3',opacity:'0.4'}));
+  svg.appendChild(tx(fsx+4,P.top+12,'估算预测→',{'font-size':'9','font-family':'JetBrains Mono,monospace',fill:'#C0392B',opacity:'0.7'}));
+
+  const fi=y=>d.findIndex(dd=>dd.y===y);
+  annotate(svg,xS(fi(2000)),yS(95),2000,95,6,-30,'#00ADEF',v=>v+'万人');
+  annotate(svg,xS(fi(2022)),yS(967.3),2022,967.3,-76,-28,'#B8860B',v=>v+'万人');
+  annotate(svg,xS(fi(2025)),yS(1105.1),2025,1105.1,-76,-28,'#00ADEF',v=>v+'万人');
+  annotate(svg,xS(fi(2029)),yS(1210),2029,1210,-76,26,'#C0392B',v=>'~'+v+'万人');
+}
+
+// ─── TABLES ───────────────────────────────────────────────────────────────
+
+function buildTable(id, headers, rows){
+  const tbl=document.getElementById(id);
+  const thead=document.createElement('thead');
+  const tr=document.createElement('tr');
+  headers.forEach(h=>{ const th=document.createElement('th'); th.textContent=h; tr.appendChild(th); });
+  thead.appendChild(tr); tbl.appendChild(thead);
+  const tbody=document.createElement('tbody');
+  rows.forEach(row=>{
+    const tr2=document.createElement('tr');
+    row.forEach((cell,ci)=>{
+      const td=document.createElement('td');
+      if(typeof cell==='object'&&cell!==null){
+        td.textContent=cell.v; td.className=cell.cls||'';
+      } else { td.textContent=cell; }
+      if(ci===0) td.className='td-year';
+      tr2.appendChild(td);
+    });
+    tbody.appendChild(tr2);
+  });
+  tbl.appendChild(tbody);
+}
+
+function fmt(v,dec=1){ return v==null?'—':typeof v==='number'?v.toFixed(dec):v; }
+function fmtPct(v){ return v==null?'—':(v*100).toFixed(1)+'%'; }
+function fmtDiff(curr,prev){
+  if(prev==null) return {v:'—',cls:''};
+  const d=curr-prev;
+  return {v:(d>=0?'+':'')+d.toFixed(1),cls:d>=0?'td-pos':'td-neg'};
+}
+
+// Table 1: gaokao
+buildTable('tbl-gaokao',
+  ['年份','报名人数（万）','同比变化（万）'],
+  gaokaoData.map((d,i)=>[
+    d.y,
+    fmt(d.v,0),
+    fmtDiff(d.v, i>0?gaokaoData[i-1].v:null)
+  ])
+);
+
+// Table 2: hs
+buildTable('tbl-hs',
+  ['年份','普通高中毕业生（万）','中职毕业生（万）','备注'],
+  hsData.map((d,i)=>[
+    d.y,
+    fmt(d.hs,1),
+    fmt(d.zz,1),
+    d.zzNote?{v:d.zzNote,cls:'td-note'}:''
+  ])
+);
+
+// Table 3: rate
+buildTable('tbl-rate',
+  ['年份','高考报名（万）','本专科招生（万）','本专科录取率','本科招生（万）','本科录取率'],
+  rateData.map(d=>[
+    d.y,
+    fmt(d.exam,0),
+    fmt(d.total,2),
+    fmtPct(d.rT),
+    fmt(d.bk,2),
+    fmtPct(d.rB)
+  ])
+);
+
+// Table 4: cgrad
+buildTable('tbl-cgrad',
+  ['年份','毕业生人数（万）','同比变化（万）','数据性质'],
+  cgradData.map((d,i)=>[
+    d.y,
+    d.forecast?{v:'约'+d.v,cls:'td-forecast'}:fmt(d.v,1),
+    fmtDiff(d.v, i>0?cgradData[i-1].v:null),
+    d.forecast?{v:'估算预测',cls:'td-forecast'}:'实际值'
+  ])
+);
+
+// ─── PANEL SWITCH ─────────────────────────────────────────────────────────
+
+function showPanel(id){
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('panel-'+id).classList.add('active');
+  event.currentTarget.classList.add('active');
+}
+
+// ─── INIT ─────────────────────────────────────────────────────────────────
+
+buildGaokao();
+buildHS();
+buildRate();
+buildCGrad();
+</script>
+</body>
+</html>
